@@ -10,3 +10,8 @@ accelerate==0.26.1
 einops==0.7.0
 safetensors==0.4.1
 scikit-image==0.22.0
+rembg
+requests
+Pillow
+torch
+torchvision

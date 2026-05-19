@@ -22,9 +22,10 @@ services:
     environment:
       - CELERY_BROKER_URL=redis://redis-queue:6379/0
       - CELERY_RESULT_BACKEND=redis://redis-queue:6379/0
+      - WEBHOOK_URL=http://192.168.0.5:8080/api/v1/vto/complete
     deploy:
-      # 🚨 바로 이 부분입니다! 컨테이너를 똑같이 4개 띄우라는 마법의 주문
-      replicas: 4
+      # 🚨 128GB VRAM 병렬 처리를 위한 2개의 Worker Replica 
+      replicas: 2
       resources:
         reservations:
           devices:
