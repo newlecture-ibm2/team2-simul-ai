@@ -1,0 +1,33 @@
+# AI 서버(DGX)의 docker-compose.yml
+version: '3.8'
+
+services:
+  # 1. API 접수창구 (FastAPI)
+  api-server:
+    build: ./api
+    ports:
+      - "80:8000"
+    # ... (FastAPI 설정)
+
+  # 2. 내부 큐 (Redis)
+  redis-queue:
+    image: redis:alpine
+    # 포트 개방 없음 (내부에서만 사용)
+
+  # 3. AI 합성 공장 (Celery Worker)
+  ai-worker:
+    build: ./ai-worker
+    depends_on:
+      - redis-queue
+    environment:
+      - CELERY_BROKER_URL=redis://redis-queue:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis-queue:6379/0
+    deploy:
+      # 🚨 바로 이 부분입니다! 컨테이너를 똑같이 4개 띄우라는 마법의 주문
+      replicas: 4
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
