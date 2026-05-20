@@ -1,17 +1,35 @@
+# ============================================
+# VTO AI Worker - Python Dependencies
+# ============================================
+
+# --- Core ---
 celery==5.3.6
 redis==5.0.1
-boto3==1.34.0
-psycopg2-binary==2.9.9
-opencv-python-headless==4.9.0.80
-ultralytics==8.1.0
+requests
+Pillow
+
+# --- PyTorch (ARM64 / CUDA 13.0) ---
+# DGX Spark(GB10)에서는 NGC 컨테이너에 이미 PyTorch가 포함됨.
+# 수동 설치 시 아래 주석을 해제하세요.
+# torch>=2.7.0
+# torchvision>=0.22.0
+
+# --- Diffusion / IDM-VTON ---
 diffusers==0.25.0
 transformers==4.36.2
 accelerate==0.26.1
 einops==0.7.0
 safetensors==0.4.1
+scipy>=1.12.0
+
+# --- Image Processing ---
+opencv-python-headless==4.9.0.80
 scikit-image==0.22.0
 rembg
-requests
-Pillow
-torch
-torchvision
+
+# --- IDM-VTON Preprocessing ---
+onnxruntime
+omegaconf
+
+# --- HuggingFace Model Download ---
+huggingface_hub
