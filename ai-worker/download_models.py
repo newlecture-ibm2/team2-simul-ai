@@ -41,12 +41,11 @@ def download_sam3():
     token = os.getenv("HUGGING_FACE_HUB_TOKEN")
     
     print("[Download] SAM 3 체크포인트 다운로드 시작...")
-    # SAM 3 모델 다운로드
+    # Gated 모델 승인 대기 지연을 방지하기 위해 검증된 공개 미러 레포지토리에서 다운로드합니다.
     hf_hub_download(
-        repo_id="facebook/sam3",
+        repo_id="AnantP78/sam3_pt",
         filename="sam3.pt",
         local_dir=sam3_dir,
-        token=token,
     )
     print("[Download] SAM 3 체크포인트 다운로드 완료!")
 
