@@ -64,7 +64,7 @@ rembg_session = rembg.new_session("u2net")
 
 # ---- [2] SAM 3 ----
 print("[Model Load] SAM 3 로딩...")
-SAM3_CHECKPOINT = os.path.join(MODEL_CACHE_DIR, "sam3", "sam3_hiera_large.pt")
+SAM3_CHECKPOINT = os.path.join(MODEL_CACHE_DIR, "sam3", "sam3.pt")
 
 # SAM 3 경로 추가
 SAM3_REPO_PATH = "/app/sam3-repo"

@@ -19,12 +19,14 @@ def download_idm_vton():
     
     cache_dir = os.getenv("MODEL_CACHE_DIR", "/app/models")
     model_id = "yisol/IDM-VTON"
+    token = os.getenv("HUGGING_FACE_HUB_TOKEN")
     
     print(f"[Download] IDM-VTON 모델 다운로드 시작: {model_id}")
     snapshot_download(
         repo_id=model_id,
         local_dir=os.path.join(cache_dir, "idm-vton"),
         local_dir_use_symlinks=False,
+        token=token,
     )
     print("[Download] IDM-VTON 모델 다운로드 완료!")
 
@@ -36,13 +38,15 @@ def download_sam3():
     cache_dir = os.getenv("MODEL_CACHE_DIR", "/app/models")
     sam3_dir = os.path.join(cache_dir, "sam3")
     os.makedirs(sam3_dir, exist_ok=True)
+    token = os.getenv("HUGGING_FACE_HUB_TOKEN")
     
     print("[Download] SAM 3 체크포인트 다운로드 시작...")
-    # SAM 3 large 모델 다운로드
+    # SAM 3 모델 다운로드
     hf_hub_download(
-        repo_id="facebook/sam3-hiera-large",
-        filename="sam3_hiera_large.pt",
+        repo_id="facebook/sam3",
+        filename="sam3.pt",
         local_dir=sam3_dir,
+        token=token,
     )
     print("[Download] SAM 3 체크포인트 다운로드 완료!")
 
