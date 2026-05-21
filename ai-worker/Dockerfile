@@ -43,6 +43,7 @@ RUN git clone --depth 1 https://github.com/facebookresearch/sam3.git /app/sam3-r
 
 # 4단계: 모델 가중치 사전 다운로드 스크립트 복사
 COPY download_models.py .
+COPY test_pipeline.py .
 
 # 5단계: 워커 코드 복사
 COPY tasks.py .

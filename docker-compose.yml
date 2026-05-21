@@ -31,6 +31,8 @@ services:
     volumes:
       # 모델 가중치를 호스트에 캐싱하여 컨테이너 재시작 시 재다운로드 방지
       - model-cache:/app/models
+      # 테스트 결과물 출력을 위한 폴더 매핑
+      - ./output:/app/output
     deploy:
       # 🚨 DGX Spark (GB10) - 128GB 통합 메모리 병렬 처리
       replicas: 2
