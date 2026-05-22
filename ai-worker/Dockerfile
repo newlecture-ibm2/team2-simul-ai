@@ -31,7 +31,7 @@ WORKDIR /app
 
 # 1단계: Python 패키지 설치 (캐시 레이어 활용)
 COPY requirements.txt .
-RUN pip install --no-cache-dir --break-system-packages -r requirements.txt
+RUN pip install --default-timeout=1000 --no-cache-dir --break-system-packages -r requirements.txt
 
 # 2단계: IDM-VTON 소스코드 클론 (src/, ip_adapter/ 등)
 RUN git clone --depth 1 https://github.com/yisol/IDM-VTON.git /app/idm-vton
