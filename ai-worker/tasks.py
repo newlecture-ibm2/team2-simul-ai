@@ -73,7 +73,7 @@ sys.path.insert(0, SAM3_REPO_PATH)
 from sam3 import build_sam3_image_model
 from sam3.model.sam3_image_processor import Sam3Processor
 
-sam3_model = build_sam3_image_model(model_path=SAM3_CHECKPOINT)
+sam3_model = build_sam3_image_model(checkpoint_path=SAM3_CHECKPOINT)
 sam3_processor = Sam3Processor(sam3_model, confidence_threshold=0.3)
 print("[Model Load] SAM 3 로딩 완료!")
 
