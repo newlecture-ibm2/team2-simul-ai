@@ -166,7 +166,10 @@ app = Celery("vto_worker", broker=REDIS_URL, backend=REDIS_URL)
 # -------------------------------------------------------------------
 def download_image(url: str) -> Image.Image:
     """URL에서 이미지를 다운로드하여 PIL Image로 메모리에 반환합니다."""
-    response = requests.get(url, stream=True, timeout=30)
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    response = requests.get(url, headers=headers, stream=True, timeout=30)
     response.raise_for_status()
     img = Image.open(io.BytesIO(response.content)).convert("RGB")
     return img
