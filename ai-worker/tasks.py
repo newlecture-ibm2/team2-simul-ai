@@ -224,18 +224,25 @@ def extract_clothing_mask(human_image: Image.Image) -> Image.Image:
     """2악장: SAM 3 텍스트 프롬프트로 옷 영역 마스크 추출"""
     print("[2악장] SAM 3로 옷 영역 마스크 추출 중...")
 
-    # SAM 3 추론
-    # activation_ckpt 내부에서 autocast 컨텍스트가 유실되는 것을 방지하기 위해 기본 dtype도 변경
-    original_dtype = torch.get_default_dtype()
+    # SAM 3 내부의 타입 충돌(BFloat16 vs Float32)을 강제로 해결하기 위한 몽키패치
+    # Activation Checkpointing 때문에 autocast가 풀리는 문제를 근본적으로 차단합니다.
+    import torch.nn.functional as F
+    original_linear_forward = torch.nn.Linear.forward
+    
+    def safe_linear_forward(self, input):
+        return F.linear(input.to(self.weight.dtype), self.weight, self.bias)
+    
+    torch.nn.Linear.forward = safe_linear_forward
+    
     try:
-        torch.set_default_dtype(torch.bfloat16)
-        with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
-            inference_state = sam3_processor.set_image(human_image)
-            inference_state = sam3_processor.set_text_prompt(
-                state=inference_state, prompt="upper body clothing"
-            )
+        # SAM 3 추론
+        inference_state = sam3_processor.set_image(human_image)
+        inference_state = sam3_processor.set_text_prompt(
+            state=inference_state, prompt="upper body clothing"
+        )
     finally:
-        torch.set_default_dtype(original_dtype)
+        # 몽키패치 원상복구
+        torch.nn.Linear.forward = original_linear_forward
 
     # 마스크 결과 추출
     masks = inference_state.get("masks", [])
