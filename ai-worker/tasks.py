@@ -225,7 +225,6 @@ def extract_clothing_mask(human_image: Image.Image) -> Image.Image:
     print("[2악장] SAM 3로 옷 영역 마스크 추출 중...")
 
     # SAM 3 내부의 타입 충돌(BFloat16 vs Float32)을 강제로 해결하기 위한 몽키패치
-    # Activation Checkpointing 때문에 autocast가 풀리는 문제를 근본적으로 차단합니다.
     import torch.nn.functional as F
     original_linear_forward = torch.nn.Linear.forward
     
@@ -235,11 +234,13 @@ def extract_clothing_mask(human_image: Image.Image) -> Image.Image:
     torch.nn.Linear.forward = safe_linear_forward
     
     try:
-        # SAM 3 추론
-        inference_state = sam3_processor.set_image(human_image)
-        inference_state = sam3_processor.set_text_prompt(
-            state=inference_state, prompt="upper body clothing"
-        )
+        # SAM 3 추론 (autocast로 Conv2d 기본 형변환을 처리하고, 
+        # Checkpointing으로 인해 풀리는 Linear는 몽키패치로 방어)
+        with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+            inference_state = sam3_processor.set_image(human_image)
+            inference_state = sam3_processor.set_text_prompt(
+                state=inference_state, prompt="upper body clothing"
+            )
     finally:
         # 몽키패치 원상복구
         torch.nn.Linear.forward = original_linear_forward
