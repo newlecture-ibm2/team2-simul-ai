@@ -74,6 +74,7 @@ from sam3 import build_sam3_image_model
 from sam3.model.sam3_image_processor import Sam3Processor
 
 sam3_model = build_sam3_image_model(checkpoint_path=SAM3_CHECKPOINT)
+sam3_model = sam3_model.to(device=device, dtype=torch.bfloat16)
 sam3_processor = Sam3Processor(sam3_model, confidence_threshold=0.3)
 print("[Model Load] SAM 3 로딩 완료!")
 
@@ -224,10 +225,11 @@ def extract_clothing_mask(human_image: Image.Image) -> Image.Image:
     print("[2악장] SAM 3로 옷 영역 마스크 추출 중...")
 
     # SAM 3 추론
-    inference_state = sam3_processor.set_image(human_image)
-    inference_state = sam3_processor.set_text_prompt(
-        state=inference_state, prompt="upper body clothing"
-    )
+    with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+        inference_state = sam3_processor.set_image(human_image)
+        inference_state = sam3_processor.set_text_prompt(
+            state=inference_state, prompt="upper body clothing"
+        )
 
     # 마스크 결과 추출
     masks = inference_state.get("masks", [])
