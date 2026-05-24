@@ -239,7 +239,7 @@ def extract_clothing_mask(human_image: Image.Image) -> Image.Image:
         with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
             inference_state = sam3_processor.set_image(human_image)
             inference_state = sam3_processor.set_text_prompt(
-                state=inference_state, prompt="upper body clothing"
+                state=inference_state, prompt="t-shirt, shirt, upper garment"
             )
     finally:
         # 몽키패치 원상복구
@@ -343,11 +343,13 @@ def run_idm_vton(
                 negative_prompt=[negative_prompt],
             )
 
-            # 텐서 준비
-            # pose_img: SAM 3 마스크에서 유도된 간단한 마스크 이미지 (DensePose 대체)
-            # IDM-VTON은 pose_img를 참고하지만 마스크로도 동작 가능
+            # pose_img: 원래 DensePose(IUV 맵)가 들어가야 하는 자리입니다.
+            # 하지만 현재 파이프라인에는 DensePose 추출기가 없으므로,
+            # 모델이 하얀색 마스크 덩어리를 사람의 인체 구조로 착각하고 이상한 바지/팔을 그려내는
+            # 환각(Hallucination) 현상을 막기 위해 아예 검은색(빈) 이미지를 넣어 영향력을 최소화합니다.
+            empty_pose = Image.new("RGB", mask_resized.size, (0, 0, 0))
             pose_tensor = (
-                tensor_transform(mask_resized.convert("RGB"))
+                tensor_transform(empty_pose)
                 .unsqueeze(0)
                 .to(device, weight_dtype)
             )
