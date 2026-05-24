@@ -258,7 +258,12 @@ def extract_clothing_mask(human_image: Image.Image) -> Image.Image:
             (human_image.size[1], human_image.size[0]), dtype=np.uint8
         )
         for m in masks:
-            mask_np = np.array(m)
+            # 텐서가 GPU에 있을 경우 CPU로 먼저 내린 후 numpy로 변환해야 함
+            if hasattr(m, "cpu"):
+                mask_np = m.cpu().numpy()
+            else:
+                mask_np = np.array(m)
+                
             if mask_np.ndim == 3:
                 mask_np = mask_np[:, :, 0]
             combined_mask = np.maximum(combined_mask, (mask_np > 0).astype(np.uint8) * 255)
