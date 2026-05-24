@@ -264,9 +264,20 @@ def extract_clothing_mask(human_image: Image.Image) -> Image.Image:
             else:
                 mask_np = np.array(m)
                 
-            if mask_np.ndim == 3:
-                mask_np = mask_np[:, :, 0]
-            combined_mask = np.maximum(combined_mask, (mask_np > 0).astype(np.uint8) * 255)
+            # SAM 3는 보통 (1, H, W) 형태를 반환하므로 차원을 안전하게 축소
+            mask_np = np.squeeze(mask_np)
+            if mask_np.ndim > 2:
+                mask_np = mask_np[0]
+                
+            # 안전하게 마스크 크기를 캔버스 크기에 맞춤 (혹시 모를 불일치 방지)
+            if mask_np.shape != combined_mask.shape:
+                temp_mask = Image.fromarray((mask_np > 0).astype(np.uint8) * 255)
+                temp_mask = temp_mask.resize(human_image.size)
+                mask_np = np.array(temp_mask)
+            else:
+                mask_np = (mask_np > 0).astype(np.uint8) * 255
+
+            combined_mask = np.maximum(combined_mask, mask_np)
         mask = Image.fromarray(combined_mask, mode="L")
 
     print("[2악장] 옷 영역 마스크 추출 완료!")
