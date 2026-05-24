@@ -239,7 +239,7 @@ def extract_clothing_mask(human_image: Image.Image) -> Image.Image:
         with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
             inference_state = sam3_processor.set_image(human_image)
             inference_state = sam3_processor.set_text_prompt(
-                state=inference_state, prompt="t-shirt, shirt, upper garment"
+                state=inference_state, prompt="shirt, t-shirt, top, sleeves, upper body clothing"
             )
     finally:
         # 몽키패치 원상복구
@@ -278,6 +278,15 @@ def extract_clothing_mask(human_image: Image.Image) -> Image.Image:
                 mask_np = (mask_np > 0).astype(np.uint8) * 255
 
             combined_mask = np.maximum(combined_mask, mask_np)
+            
+        # [중요 보정] 마스크 테두리에 원래 옷(검은색 소매나 그림자)이 남는 것을 방지하기 위해 마스크 영역을 팽창(Dilation)
+        import cv2
+        kernel = np.ones((15, 15), np.uint8)
+        combined_mask = cv2.dilate(combined_mask, kernel, iterations=1)
+        
+        # [중요 보정] 합성 경계선이 부자연스러워지는 것을 막기 위해 가장자리를 부드럽게(Blur) 처리
+        combined_mask = cv2.GaussianBlur(combined_mask, (11, 11), 0)
+
         mask = Image.fromarray(combined_mask, mode="L")
 
     print("[2악장] 옷 영역 마스크 추출 완료!")
