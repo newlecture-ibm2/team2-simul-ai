@@ -238,8 +238,9 @@ def extract_clothing_mask(human_image: Image.Image) -> Image.Image:
         # Checkpointing으로 인해 풀리는 Linear는 몽키패치로 방어)
         with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
             inference_state = sam3_processor.set_image(human_image)
+            # 팔(arms)을 마스크에 포함시켜야 긴팔 옷이 합성될 공간이 생깁니다.
             inference_state = sam3_processor.set_text_prompt(
-                state=inference_state, prompt="t-shirt, shirt"
+                state=inference_state, prompt="t-shirt, shirt, arms"
             )
     finally:
         # 몽키패치 원상복구
@@ -280,8 +281,9 @@ def extract_clothing_mask(human_image: Image.Image) -> Image.Image:
             combined_mask = np.maximum(combined_mask, mask_np)
             
         # [중요 보정] 마스크 테두리에 원래 옷(검은색 소매나 그림자)이 남는 것을 방지하기 위해 마스크 영역을 팽창(Dilation)
+        # 옷이 밑으로 너무 길어지는 현상을 방지하기 위해 팽창 범위를 15에서 5로 줄입니다.
         import cv2
-        kernel = np.ones((15, 15), np.uint8)
+        kernel = np.ones((5, 5), np.uint8)
         combined_mask = cv2.dilate(combined_mask, kernel, iterations=1)
         
         # [중요 보정] 합성 경계선이 부자연스러워지는 것을 막기 위해 가장자리를 부드럽게(Blur) 처리
@@ -317,6 +319,9 @@ def run_idm_vton(
     im_mask = human_tensor * (1 - inpaint_mask)
 
     # 옷 텍스트 설명 (기본값)
+    # 하드코딩된 '긴팔' 텍스트를 제거하고 포괄적인 설명으로 되돌립니다.
+    # 팔(arms) 마스크가 열려있기 때문에, AI가 타겟 옷(ip_adapter_image)의 생김새를 보고
+    # 알아서 긴팔이면 소매를 채우고, 반팔이면 맨살(피부)을 채워 넣게 됩니다.
     garment_des = "upper body garment"
 
     with torch.no_grad():
