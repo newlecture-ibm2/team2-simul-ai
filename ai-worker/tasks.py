@@ -238,9 +238,8 @@ def extract_clothing_mask(human_image: Image.Image) -> Image.Image:
         # Checkpointing으로 인해 풀리는 Linear는 몽키패치로 방어)
         with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
             inference_state = sam3_processor.set_image(human_image)
-            # 팔(arms)을 마스크에 포함시켜야 긴팔 옷이 합성될 공간이 생깁니다.
             inference_state = sam3_processor.set_text_prompt(
-                state=inference_state, prompt="t-shirt, shirt, arms"
+                state=inference_state, prompt="t-shirt, shirt"
             )
     finally:
         # 몽키패치 원상복구
@@ -280,14 +279,37 @@ def extract_clothing_mask(human_image: Image.Image) -> Image.Image:
 
             combined_mask = np.maximum(combined_mask, mask_np)
             
-        # [중요 보정] 마스크 테두리에 원래 옷(검은색 소매나 그림자)이 남는 것을 방지하기 위해 마스크 영역을 팽창(Dilation)
-        # 옷이 밑으로 너무 길어지는 현상을 방지하기 위해 팽창 범위를 15에서 5로 줄입니다.
+        # [핵심 보정] SAM 3는 '옷' 영역만 마스킹하므로 맨팔(피부) 부분은 포함되지 않음.
+        # 긴팔 옷을 합성하려면 팔 부분에도 도화지(마스크)가 깔려 있어야 함.
+        # → 셔츠 마스크의 바운딩 박스를 구한 뒤, 좌우로 40% 확장하여 팔 영역을 강제로 포함시킴.
         import cv2
-        kernel = np.ones((5, 5), np.uint8)
-        combined_mask = cv2.dilate(combined_mask, kernel, iterations=1)
+        rows_with_mask = np.where(combined_mask.max(axis=1) > 0)[0]
+        if len(rows_with_mask) > 0:
+            top_y = rows_with_mask[0]
+            bottom_y = rows_with_mask[-1]
+            cols_with_mask = np.where(combined_mask.max(axis=0) > 0)[0]
+            left_x = cols_with_mask[0]
+            right_x = cols_with_mask[-1]
+            
+            # 셔츠 너비의 40%만큼 좌우로 확장 (팔 영역 커버)
+            shirt_width = right_x - left_x
+            expand_x = int(shirt_width * 0.4)
+            new_left = max(0, left_x - expand_x)
+            new_right = min(combined_mask.shape[1], right_x + expand_x)
+            
+            # 상의 상단 30%~하단 사이의 수직 범위에서만 좌우 확장 (어깨~소매 끝)
+            # 상단 30% 지점 = 어깨 아래부터 확장 시작
+            shoulder_y = top_y + int((bottom_y - top_y) * 0.15)
+            combined_mask[shoulder_y:bottom_y, new_left:new_right] = np.maximum(
+                combined_mask[shoulder_y:bottom_y, new_left:new_right], 255
+            )
         
-        # [중요 보정] 합성 경계선이 부자연스러워지는 것을 막기 위해 가장자리를 부드럽게(Blur) 처리
-        combined_mask = cv2.GaussianBlur(combined_mask, (11, 11), 0)
+        # 수직 방향은 최소한만 팽창 (옷 길이가 늘어나는 것 방지)
+        kernel_v = np.ones((3, 1), np.uint8)
+        combined_mask = cv2.dilate(combined_mask, kernel_v, iterations=1)
+        
+        # 합성 경계선이 부자연스러워지는 것을 막기 위해 가장자리를 부드럽게(Blur) 처리
+        combined_mask = cv2.GaussianBlur(combined_mask, (15, 15), 0)
 
         mask = Image.fromarray(combined_mask, mode="L")
 
