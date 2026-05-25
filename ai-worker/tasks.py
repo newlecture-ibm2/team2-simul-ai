@@ -239,7 +239,7 @@ def extract_clothing_mask(human_image: Image.Image) -> Image.Image:
         with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
             inference_state = sam3_processor.set_image(human_image)
             inference_state = sam3_processor.set_text_prompt(
-                state=inference_state, prompt="shirt, t-shirt, top, sleeves, upper body clothing"
+                state=inference_state, prompt="t-shirt, shirt"
             )
     finally:
         # 몽키패치 원상복구
